@@ -9,7 +9,15 @@
     visualização: com algortimo genético é preciso mostrar a população sendo gerada e aptidões evoluindo
   */
 
-
+/*
+ * TODO
+ * 
+ * 1. Leitura do arquivo -> OK
+ * 2. População inicial -> OK
+ * 3. Seleção (contar colisoes e escolher os 2 que tiverem menos) se fiver algum com 0 colisoes ele achou a saida
+ * 4. Reprodução
+ * 5. Mutação (só escolhe um dos filhos e substitui alguns "genes" de forma aleatória)
+ */
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -19,17 +27,22 @@ import java.util.Random;
 
 public class Labirinto {
 
-    public static void main(String[] args) {
-        char[][] labirinto = lerLabirinto("labirinto1.txt");
+    static int tamVetor = 0;
+    static int tamPopulacao = 10;
 
+    public static void main(String[] args) {
+        char[][] labirinto = lerLabirinto("labirinto1.txt");      
 
         System.out.println("Labiritno original");
         for (int i = 0; i < labirinto.length; i++) {
             for (int j = 0; j < labirinto[i].length; j++) {
                 System.out.print(labirinto[i][j] + " ");
+                if(labirinto[i][j] == '0') tamVetor++;
             }
             System.out.println();
         }
+
+        System.out.println("Tamanho de cada vetor da população: " + tamVetor);
 
         int[] caminho = algoritmoGenetico(labirinto);       
 
@@ -90,18 +103,32 @@ public class Labirinto {
         }
         return caminhoMatriz;
     }
-    
-
-
 
     private static int[] algoritmoGenetico(char[][] labirinto) {
         int[][] populacao = gerarPopulacao();
+
+        System.out.println("População inicial: ");
+        for (int i = 0; i < populacao.length; i++) {
+            for (int j = 0; j < populacao[i].length; j++) {
+                System.out.print(populacao[i][j] + " ");
+            }
+            System.out.println();
+        }
+
         return null;
     }
     
 
     private static int[][] gerarPopulacao() {
-        return null;
+        int[][] populacao = new int[tamPopulacao][tamVetor];
+        Random random = new Random();
+
+        for (int i = 0; i < populacao.length; i++) {
+            for (int j = 0; j < populacao[i].length; j++) {
+                populacao[i][j] = random.nextInt(4);
+            }
+        }        
+        return populacao;
     }
 
 
