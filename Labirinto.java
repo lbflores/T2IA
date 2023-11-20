@@ -97,62 +97,74 @@ public class Labirinto {
     }
 
     private static void calculaPontuacao(int[][] populacao, char[][] labirinto) {
-        int linha = 0;
-        int coluna = 0;       
+        Posicao posicaoAtual = new Posicao(0, 0);   
         
         for (int i = 0; i < populacao.length; i++) {
             ArrayList<Posicao> caminhoPercorrido = new ArrayList<>();
             for (int j = 0; j < populacao[i].length-1; j++) {
                 // Caminha pelo labirinto
-                switch (populacao[i][j]) {
-                    case 0:
-                        // Anda para cima
-                        linha =+ -1;                            
-                        break;
-                    case 1:
-                        // Anda para baixo
-                        linha =+ 1;
-                        break;
-                    case 2:
-                        // Anda para esquerda
-                        coluna =+ -1;
-                        
-                        break;
-                    case 3: 
-                        // Anda para direita
-                        coluna =+ 1;
-                        break;
-                    default:
-                }
+                caminhaNoLabirinto(populacao[i][j], posicaoAtual);
                 // Altera pontuação
-                try {                    
-                    switch (labirinto[linha][coluna]) {
-                        case '0':
-                            populacao[i][populacao[i].length-1] += PON_ACERTOU;
-                            
-                            break;
-                        case '1':
-                            populacao[i][populacao[i].length-1] += PEN_COLIDIU;
-                            break;
-                        case '3':
-                            populacao[i][populacao[i].length-1] += PON_ACHOU;
-                            break;
-                        default:                            
-                            break;                    
-                    }
-
-                    for (Posicao p : caminhoPercorrido) {
-                        if(p.linha == linha && p.coluna == coluna) {
-                            populacao[i][populacao[i].length-1] += PEN_REPETIU;
-                        }
-                    }
-                    caminhoPercorrido.add(new Posicao(linha, coluna));              
-         
-                } catch (ArrayIndexOutOfBoundsException e){
-                    populacao[i][populacao[i].length-1] += PEN_SAIU;
-                }   
+                populacao[i][populacao[i].length-1] += buscaPontuacao(posicaoAtual, caminhoPercorrido, labirinto);
             }
         }
+    }
+
+    private static void caminhaNoLabirinto(int movimento, Posicao posicaoAtual) {
+        switch (movimento) {
+            case 0:
+                // Anda para cima
+                posicaoAtual.linha =+ -1;
+                break;
+            case 1:
+                // Anda para baixo
+                posicaoAtual.linha =+ 1;
+                break;
+            case 2:
+                // Anda para esquerda
+                posicaoAtual.coluna =+ -1;                        
+                break;
+            case 3: 
+                // Anda para direita
+                posicaoAtual.coluna =+ 1;
+                break;
+            default:
+                break;
+        }
+    }
+
+    private static int buscaPontuacao(Posicao posicaoAtual, ArrayList<Posicao> caminhoPercorrido, char[][] labirinto) {
+        int pontuacao = 0;
+        try {                    
+            switch (labirinto[posicaoAtual.linha][posicaoAtual.coluna]) {
+                case '0':
+                    pontuacao += PON_ACERTOU;                            
+                    break;
+                case '1':
+                    pontuacao += PEN_COLIDIU;
+                    break;
+                case '3':
+                    pontuacao += PON_ACHOU;
+                    break;
+                default:                            
+                    break;
+            }
+
+            for (Posicao p : caminhoPercorrido) {
+                if(p.linha == posicaoAtual.linha && p.coluna == posicaoAtual.coluna) {
+                    pontuacao +=  PEN_REPETIU;
+                }
+            }
+            caminhoPercorrido.add(posicaoAtual);              
+            return pontuacao;
+        } catch (ArrayIndexOutOfBoundsException e){
+            pontuacao += PEN_SAIU;
+            return pontuacao;
+        } 
+    }
+
+    private static void validaCaminho() {
+
     }
 
     private static char[][] caminhoNaMatriz(char[][] labirinto, int[] caminho) {
