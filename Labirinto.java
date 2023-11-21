@@ -58,6 +58,7 @@ public class Labirinto {
             }
             System.out.println();
         }
+        tamVetor += 2;
 
         System.out.println("Tamanho de cada vetor da população: " + tamVetor);
 
@@ -101,11 +102,11 @@ public class Labirinto {
         
         for (int i = 0; i < populacao.length; i++) {
             ArrayList<Posicao> caminhoPercorrido = new ArrayList<>();
-            for (int j = 0; j < populacao[i].length-1; j++) {
+            for (int j = 0; j < populacao[i].length-2; j++) {
                 // Caminha pelo labirinto
                 caminhaNoLabirinto(populacao[i][j], posicaoAtual);
                 // Altera pontuação
-                populacao[i][populacao[i].length-1] += buscaPontuacao(posicaoAtual, caminhoPercorrido, labirinto);
+                populacao[i][populacao[i].length-2] += buscaPontuacao(posicaoAtual, caminhoPercorrido, labirinto);
             }
         }
     }
@@ -114,15 +115,15 @@ public class Labirinto {
         switch (movimento) {
             case 0:
                 // Anda para cima
-                posicaoAtual.linha =+ -1;
+                posicaoAtual.linha += -1;
                 break;
             case 1:
                 // Anda para baixo
-                posicaoAtual.linha =+ 1;
+                posicaoAtual.linha += 1;
                 break;
             case 2:
                 // Anda para esquerda
-                posicaoAtual.coluna =+ -1;                        
+                posicaoAtual.coluna += -1;                        
                 break;
             case 3: 
                 // Anda para direita
@@ -138,7 +139,7 @@ public class Labirinto {
         try {                    
             switch (labirinto[posicaoAtual.linha][posicaoAtual.coluna]) {
                 case '0':
-                    pontuacao += PON_ACERTOU;                            
+                    pontuacao += PON_ACERTOU;
                     break;
                 case '1':
                     pontuacao += PEN_COLIDIU;
@@ -214,42 +215,28 @@ public class Labirinto {
         printPopulacao(populacao);       
 
         // selção
-        System.out.println("selecionados: ");
-        ArrayList<int[]> selecionados = selecao(populacao);
-        for (int[] s : selecionados) {
-            for(int i = 0; i < tamVetor+1; i++){
-                System.out.print(s[i] + " ");
-            }
-            System.out.println();
+        System.out.println("Elitismo: ");
+        int[] selecionado = elitismo(populacao);
+        for(int i = 0; i < tamVetor; i++){
+            System.out.print(selecionado[i] + " ");
         }
+        System.out.println();
 
         return null;
     }
 
-    private static ArrayList<int[]> selecao(int[][] populacao) {
-        int pontuacao1 = -1000000000;
-        int pontuacao2 = -1000000000;
-        int[] selecionado1 = new int[tamVetor + 1];
-        int[] selecionado2 = new int[tamVetor + 1];
-        ArrayList<int[]>selecionados = new ArrayList<>();
+    private static int[] elitismo(int[][] populacao) {
+        int[] selecionado = new int[tamVetor];
+        selecionado[tamVetor-2] = -1000000;
 
-        for(int i = 0; i< populacao.length; i++) {
-            if (populacao[i][populacao[i].length-1] > pontuacao1) {
-                pontuacao1 = populacao[i][populacao[i].length-1];
-                for(int j = 0; j < tamVetor+1; j++) {
-                    selecionado1[j] = populacao[i][j];
-                }
-            } 
-            else if (populacao[i][populacao[i].length-1] > pontuacao2) {
-                pontuacao2 = populacao[i][populacao[i].length-1];
-                for(int j = 0; j < tamVetor+1; j++) {
-                    selecionado2[j] = populacao[i][j];
+        for(int i = 0; i< populacao.length; i++) {          
+            if (populacao[i][populacao[i].length-2] >= selecionado[tamVetor-2]) {
+                for(int j = 0; j < tamVetor; j++) {
+                    selecionado[j] = populacao[i][j];
                 }
             }
         }
-        selecionados.add(selecionado1);
-        selecionados.add(selecionado2);
-        return selecionados;
+        return selecionado;
     }
     
     private static void printPopulacao(int[][] populacao) {
@@ -263,11 +250,11 @@ public class Labirinto {
 
     private static int[][] gerarPopulacao() {
         //+1 para guardar a pontuação na ultima posição do vetor
-        int[][] populacao = new int[tamPopulacao][tamVetor+1];
+        int[][] populacao = new int[tamPopulacao][tamVetor];
         Random random = new Random();
 
         for (int i = 0; i < populacao.length; i++) {
-            for (int j = 0; j < populacao[i].length-1; j++) {
+            for (int j = 0; j < populacao[i].length-2; j++) {
                 populacao[i][j] = random.nextInt(4);             
             }
         }        
