@@ -47,7 +47,12 @@ public class LabirintoAG2 {
     // Pontua ao achar saida
     static final int PON_ACHOU = 10;
 
+    // Pontua ao achar saida
+    static final int PEN_CAMINHOU = -2;
+
     static int iteracao = 0;
+
+    static boolean achou = false;
 
 
 
@@ -151,7 +156,8 @@ public class LabirintoAG2 {
 
     private static boolean solucaoEncontrada(int[][] populacaoAtual, char[][] labirinto) {
         for (int[] individuo : populacaoAtual) {
-            if (funcHeuristica(individuo, labirinto) == 100000) {
+            funcHeuristica(individuo, labirinto);
+            if (achou) {
                 //imprimi individuo
                 System.out.println("Solução encontrada:");
                 for (int i = 0; i < individuo.length; i++) {
@@ -261,28 +267,28 @@ public class LabirintoAG2 {
 
         if (quantidadeMutacao > 0) {
             while (count <= quantidadeMutacao) {           
-            // Escolhe randomicamente um movimento para mutar
-            int indiceMovimentoMutado = random.nextInt(corte, mutacao.length);
-
-            // Substitui o movimento por outro aleatório
-            mutacao[indiceMovimentoMutado] = random.nextInt(4); // 0 a 3
-
-            count++;
-        }
-        }
-
-        count = 0;
-        if(quantidadeMutacaoParteValida > 0) {
-            while (count <= quantidadeMutacaoParteValida) {           
                 // Escolhe randomicamente um movimento para mutar
-                int indiceMovimentoMutado = random.nextInt(0,corte);
+                int indiceMovimentoMutado = random.nextInt(corte, mutacao.length);
 
                 // Substitui o movimento por outro aleatório
                 mutacao[indiceMovimentoMutado] = random.nextInt(4); // 0 a 3
 
                 count++;
-            }   
+            }
         }
+
+        // count = 0;
+        // if(quantidadeMutacaoParteValida > 0) {
+        //     while (count <= quantidadeMutacaoParteValida) {           
+        //         // Escolhe randomicamente um movimento para mutar
+        //         int indiceMovimentoMutado = random.nextInt(0,corte);
+
+        //         // Substitui o movimento por outro aleatório
+        //         mutacao[indiceMovimentoMutado] = random.nextInt(4); // 0 a 3
+
+        //         count++;
+        //     }   
+        // }
 
         // Avalia a pontuação após a mutação
         // int pontuacaoMutacao = funcHeuristica(mutacao, labirinto);
@@ -380,7 +386,7 @@ public class LabirintoAG2 {
 
         // Percorre o caminho e atualiza a pontuação
         for(int i = 0; i < populacaoAtual.length; i++) {        
-            
+            int contRep = 0;
             switch (populacaoAtual[i]) {
                 case 0: // Cima
                     posicaoAtualX--;
@@ -403,16 +409,18 @@ public class LabirintoAG2 {
             } else if (labirinto[posicaoAtualX][posicaoAtualY] == '1') {
                 // COLIDIU
                 return corte;
-            } else if (labirinto[posicaoAtualX][posicaoAtualY] == 'S') {
+            } else if (labirinto[posicaoAtualX][posicaoAtualY] == '3') {
                 // ACHOU
+                achou = true;
                 return corte = i;
             } else {
                 for (Posicao p : caminhoPercorrido) {
                     if(p.linha == posicaoAtualX && p.coluna == posicaoAtualY) {
-                        if (corte - 3 < 0) {
+                        //contRep++;
+                        if (corte - 2 < 0) {
                             return 0;
-                        }   
-                        return corte - 3;
+                        }
+                        return corte - 2;
                     }
                 }
                 caminhoPercorrido.add(new Posicao(posicaoAtualX , posicaoAtualY));
@@ -526,8 +534,9 @@ public class LabirintoAG2 {
             } else if (labirinto[posicaoAtualX][posicaoAtualY] == '1') {
                 pontuacao += PEN_COLIDIU;
                 return pontuacao;
-            } else if (labirinto[posicaoAtualX][posicaoAtualY] == 'S') {
-                pontuacao = 100000;
+            } else if (labirinto[posicaoAtualX][posicaoAtualY] == '3') {
+                pontuacao = PON_ACHOU;
+                achou = true;
                 return pontuacao;
             } else {
                 // Verifica se a posição já foi visitada
@@ -538,6 +547,7 @@ public class LabirintoAG2 {
                 }
                 caminhoPercorrido.add(new Posicao(posicaoAtualX , posicaoAtualY));
                 pontuacao += PON_ACERTOU;
+                pontuacao += PEN_CAMINHOU;
             }
     }
 
