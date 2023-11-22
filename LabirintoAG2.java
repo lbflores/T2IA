@@ -33,7 +33,7 @@ import java.util.Random;
 public class LabirintoAG2 {
 
     //Penalidade ao repetir caminho
-    static final int PEN_REPETIU = -5;
+    static final int PEN_REPETIU = -6;
     
     // Penalidade ao colidir com parede
     static final int PEN_COLIDIU = -5;
@@ -47,6 +47,8 @@ public class LabirintoAG2 {
     // Pontua ao achar saida
     static final int PON_ACHOU = 10;
 
+    static int iteracao = 0;
+
 
 
     public static void main(String[] args) {
@@ -55,8 +57,8 @@ public class LabirintoAG2 {
         //cria vetor de 11 X espaços livres, significa 11 possíveis soluções
         int[][] populacaoAtual = new int[5][espacosLivres];
         int[][] populacaoIntermediaria = new int[5][espacosLivres];
-        int iteracao = 0;
-        int maxIteracoes = 1000; 
+        iteracao = 0;
+        int maxIteracoes = 10000; 
 
         System.out.println("Labiritno original");
         for (int i = 0; i < labirinto.length; i++) {
@@ -69,6 +71,11 @@ public class LabirintoAG2 {
 
         // while (!solucaoEncontrada(populacaoAtual, labirinto) && iteracao < maxIteracoes) {
         while (!solucaoEncontrada(populacaoAtual, labirinto) && iteracao < maxIteracoes) {
+
+            if(iteracao == 500) {
+                System.out.println("500");
+                System.out.println();
+            }
             
             //Função heurística
             //imprime população atual
@@ -241,7 +248,9 @@ public class LabirintoAG2 {
         
         int corte = buscaPontoDeCorte(linhaAtual, labirinto);
         int dispovinelParaMutar = linhaAtual.length - corte;
-        int quantidadeMutacao =  (int) (dispovinelParaMutar * 0.25);
+        int quantidadeMutacao =  (int) (dispovinelParaMutar * 0.5);
+
+        int quantidadeMutacaoParteValida = (int) (corte * 0.10);
         int count = 0;
 
         int[] melhorMutacao = Arrays.copyOf(linhaAtual, linhaAtual.length);
@@ -250,7 +259,8 @@ public class LabirintoAG2 {
 
         int[] mutacao = Arrays.copyOf(linhaAtual, linhaAtual.length);
 
-        while (count <= quantidadeMutacao) {           
+        if (quantidadeMutacao > 0) {
+            while (count <= quantidadeMutacao) {           
             // Escolhe randomicamente um movimento para mutar
             int indiceMovimentoMutado = random.nextInt(corte, mutacao.length);
 
@@ -258,9 +268,21 @@ public class LabirintoAG2 {
             mutacao[indiceMovimentoMutado] = random.nextInt(4); // 0 a 3
 
             count++;
-       }
+        }
+        }
 
-        
+        count = 0;
+        if(quantidadeMutacaoParteValida > 0) {
+            while (count <= quantidadeMutacaoParteValida) {           
+                // Escolhe randomicamente um movimento para mutar
+                int indiceMovimentoMutado = random.nextInt(0,corte);
+
+                // Substitui o movimento por outro aleatório
+                mutacao[indiceMovimentoMutado] = random.nextInt(4); // 0 a 3
+
+                count++;
+            }   
+        }
 
         // Avalia a pontuação após a mutação
         // int pontuacaoMutacao = funcHeuristica(mutacao, labirinto);
@@ -314,7 +336,7 @@ public class LabirintoAG2 {
         int[] filho2 = new int[tamanho];
         for (int i = 0; i < tamanho - 2; i++) {
             if (i < corte){
-                filho1[i] = melhorCorte[i];
+                filho2[i] = melhorCorte[i];
             } else {
                 // Se for 0 na máscara, herda do pai, senão, herda da mãe
                 filho2[i] = (mascaraBinaria[i] == 0) ? pai[i] : mae[i];
@@ -387,10 +409,10 @@ public class LabirintoAG2 {
             } else {
                 for (Posicao p : caminhoPercorrido) {
                     if(p.linha == posicaoAtualX && p.coluna == posicaoAtualY) {
-                        if (corte - 10 < 0) {
+                        if (corte - 3 < 0) {
                             return 0;
                         }   
-                        return corte - 10;
+                        return corte - 3;
                     }
                 }
                 caminhoPercorrido.add(new Posicao(posicaoAtualX , posicaoAtualY));
