@@ -33,19 +33,19 @@ import java.util.Random;
 public class LabirintoAG2 {
 
     //Penalidade ao repetir caminho
-    static final int PEN_REPETIU = -6;
+    static final int PEN_REPETIU = -10;
     
     // Penalidade ao colidir com parede
-    static final int PEN_COLIDIU = -5;
+    static final int PEN_COLIDIU = -50;
     
     // Penalidade ao sair do labirinto    
-    static final int PEN_SAIU = -5;
+    static final int PEN_SAIU = -60;
 
     // Pontua ao acertar caminho
-    static final int PON_ACERTOU = 8;
+    static final int PON_ACERTOU = 10;
 
     // Pontua ao achar saida
-    static final int PON_ACHOU = 10;
+    static final int PON_ACHOU = 20;
 
     // Pontua ao achar saida
     static final int PEN_CAMINHOU = -2;
@@ -57,7 +57,7 @@ public class LabirintoAG2 {
 
 
     public static void main(String[] args) {
-        char[][] labirinto = lerLabirinto("labirinto1.txt");
+        char[][] labirinto = lerLabirinto("labirinto_teste3.txt");
         int espacosLivres = contarEspacosLivres(labirinto);
         //cria vetor de 11 X espaços livres, significa 11 possíveis soluções
         int[][] populacaoAtual = new int[5][espacosLivres];
