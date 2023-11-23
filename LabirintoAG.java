@@ -3,61 +3,50 @@
  *  Objetivo: encontrar caminho que leva a saída S, não necessáriamente o caminho mais curto.
  */
 
- /*
-    Formato do Arquivo de entrada
-
-    E 0 0 0 0 0 0 0 0 0 0 0
-    1 1 1 1 0 0 0 0 0 1 1 1
-    1 0 0 0 0 1 1 1 0 1 1 0
-    1 0 1 1 1 1 1 1 0 0 0 0
-    0 0 0 1 0 0 0 0 1 0 1 1
-    1 1 0 0 0 1 0 1 0 0 1 1
-    1 1 1 0 1 1 0 0 0 1 1 0
-    0 0 1 0 0 1 0 1 0 1 1 0
-    0 0 0 0 1 1 0 0 0 1 1 0
-    1 1 1 0 1 0 0 1 1 1 1 0
-    1 1 1 0 1 0 0 0 0 1 1 1
-    1 1 1 0 0 0 0 1 0 0 0 S
-
-  */
-
-
-
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
+
 
 public class LabirintoAG {
 
     //Penalidade ao repetir caminho
-    static final int PEN_REPETIU = -1;
+    static final int PEN_REPETIU = -20;
     
     // Penalidade ao colidir com parede
-    static final int PEN_COLIDIU = -2;
+    static final int PEN_COLIDIU = -60;
     
     // Penalidade ao sair do labirinto    
-    static final int PEN_SAIU = -3;
+    static final int PEN_SAIU = -70;
 
     // Pontua ao acertar caminho
-    static final int PON_ACERTOU = 2;
+    static final int PON_ACERTOU = 10;
 
     // Pontua ao achar saida
-    static final int PON_ACHOU = 5;
+    static final int PON_ACHOU = 20;
+
+    // Pontua ao achar saida
+    static final int PEN_CAMINHOU = -2;
+
+    static int iteracao = 0;
+
+    static boolean achou = false;
 
 
 
     public static void main(String[] args) {
-        char[][] labirinto = lerLabirinto("labirinto1.txt");
+        char[][] labirinto = lerLabirinto("labirinto_teste1.txt");
         int espacosLivres = contarEspacosLivres(labirinto);
         //cria vetor de 11 X espaços livres, significa 11 possíveis soluções
         int[][] populacaoAtual = new int[5][espacosLivres];
         int[][] populacaoIntermediaria = new int[5][espacosLivres];
-        int iteracao = 0;
-        int maxIteracoes = 1000; 
-
-
+        iteracao = 0;
+        int maxIteracoes = 10000; 
 
         System.out.println("Labiritno original");
         for (int i = 0; i < labirinto.length; i++) {
@@ -66,9 +55,15 @@ public class LabirintoAG {
             }
             System.out.println();
         }
-
+        inicializaPopulacao(populacaoAtual);
+       
         while (!solucaoEncontrada(populacaoAtual, labirinto) && iteracao < maxIteracoes) {
-            inicializaPopulacao(populacaoAtual);
+
+            if(iteracao == 500) {
+                System.out.println("500");
+                System.out.println();
+            }
+            
             //Função heurística
             //imprime população atual
             System.out.println("População atual:");
@@ -89,7 +84,7 @@ public class LabirintoAG {
                 int indicePai = torneio(populacaoAtual, labirinto);
                 int indiceMae = torneio(populacaoAtual, labirinto);
                 
-                int[][] filhos = crossover(populacaoAtual[indicePai], populacaoAtual[indiceMae]);
+                int[][] filhos = crossover(populacaoAtual[indicePai], populacaoAtual[indiceMae], labirinto);
     
                 populacaoIntermediaria[i] = filhos[0]; // Primeiro filho
                 populacaoIntermediaria[i + 1] = filhos[1]; // Segundo filho
@@ -97,15 +92,14 @@ public class LabirintoAG {
 
                 // Avalia o filho 1
                 int pontuacaoFilho1 = funcHeuristica(populacaoIntermediaria[i], labirinto);
-                System.out.println("Pontuação do filho 1: " + pontuacaoFilho1);
+                //System.out.println("Pontuação do filho 1: " + pontuacaoFilho1);
                 // Avalia o filho 2
                 int pontuacaoFilho2 = funcHeuristica(populacaoIntermediaria[i + 1], labirinto);
-                System.out.println("Pontuação do filho 2: " + pontuacaoFilho2);
+               // System.out.println("Pontuação do filho 2: " + pontuacaoFilho2);
                 
                 //Aplica mutação
                 populacaoIntermediaria[i] = mutacao(populacaoIntermediaria[i], labirinto);
-                populacaoIntermediaria[i + 1] = mutacao(populacaoIntermediaria[i + 1], labirinto);               
-                
+                populacaoIntermediaria[i + 1] = mutacao(populacaoIntermediaria[i + 1], labirinto);
             }
 
             // Atualiza a população atual com a população intermediária
@@ -121,6 +115,20 @@ public class LabirintoAG {
             System.out.println();
         } else {
             System.out.println("Nenhuma solução encontrada após " + maxIteracoes + " iterações.");
+
+            System.out.println("Caminhos realizados:");
+
+            System.out.println();
+
+            int count = 0;
+            for(int[] individuo: populacaoAtual){
+                System.out.println("Indivíduo " + count);
+                imprimirCaminhoEncontrado(individuo, labirinto);
+                count++;
+                System.out.println();
+            }
+            
+
             System.out.println();
         }   
 
@@ -130,7 +138,8 @@ public class LabirintoAG {
 
     private static boolean solucaoEncontrada(int[][] populacaoAtual, char[][] labirinto) {
         for (int[] individuo : populacaoAtual) {
-            if (funcHeuristica(individuo, labirinto) == PON_ACHOU) {
+            funcHeuristica(individuo, labirinto);
+            if (achou) {
                 //imprimi individuo
                 System.out.println("Solução encontrada:");
                 for (int i = 0; i < individuo.length; i++) {
@@ -144,10 +153,6 @@ public class LabirintoAG {
         }
         return false;
     }
-
-
-
-
 
     private static void imprimirCaminhoEncontrado(int[] individuo, char[][] labirinto) {
         char[][] labirintoCaminho = new char[labirinto.length][labirinto[0].length];
@@ -222,40 +227,54 @@ public class LabirintoAG {
 
     private static int[] mutacao(int[] linhaAtual, char[][] labirinto) {
         Random random = new Random();
-        int tentativasMaximas = 10;
+     
+
+        
+        int corte = buscaPontoDeCorte(linhaAtual, labirinto);
+        int dispovinelParaMutar = linhaAtual.length - corte;
+        int quantidadeMutacao =  (int) (dispovinelParaMutar * 0.5);
+
+  
+        int count = 0;
 
         int[] melhorMutacao = Arrays.copyOf(linhaAtual, linhaAtual.length);
         int melhorPontuacao = funcHeuristica(linhaAtual, labirinto);
-        System.out.println("Melhor pontuação antes da mutação: " + melhorPontuacao);
+        //System.out.println("Melhor pontuação antes da mutação: " + melhorPontuacao);
 
-        for (int tentativa = 0; tentativa < tentativasMaximas; tentativa++) {
-            int[] mutacao = Arrays.copyOf(linhaAtual, linhaAtual.length);
+        int[] mutacao = Arrays.copyOf(linhaAtual, linhaAtual.length);
 
-            // Escolhe randomicamente um movimento para mutar
-            int indiceMovimentoMutado = random.nextInt(mutacao.length);
+        if (quantidadeMutacao > 0) {
+            while (count <= quantidadeMutacao) {           
+                // Escolhe randomicamente um movimento para mutar
+                int indiceMovimentoMutado = random.nextInt(corte, mutacao.length);
 
-            // Substitui o movimento por outro aleatório
-            mutacao[indiceMovimentoMutado] = random.nextInt(4); // 0 a 3
+                // Substitui o movimento por outro aleatório
+                mutacao[indiceMovimentoMutado] = random.nextInt(4); // 0 a 3
 
-            // Avalia a pontuação após a mutação
-            int pontuacaoMutacao = funcHeuristica(mutacao, labirinto);
-
-            // Se a pontuação da mutação for melhor, atualiza a melhor mutação
-            if (pontuacaoMutacao > melhorPontuacao) {
-                melhorMutacao = Arrays.copyOf(mutacao, mutacao.length);
-                melhorPontuacao = pontuacaoMutacao;
+                count++;
             }
-        }       
+        }
 
-        // Retorna a melhor mutação
-        System.out.println("Melhor pontuação após a mutação: " + melhorPontuacao);
+         // Retorna a melhor mutação
+        melhorMutacao = Arrays.copyOf(mutacao, mutacao.length);
+        //System.out.println("Melhor pontuação após a mutação: " + melhorPontuacao);
         return melhorMutacao;
     }
 
 
 
-    private static int[][] crossover(int[] pai, int[] mae) {
+    private static int[][] crossover(int[] pai, int[] mae, char[][] labirinto) {
         Random random = new Random();
+
+        int corte = buscaPontoDeCorte(pai, labirinto);        
+        int corteMae = buscaPontoDeCorte(mae, labirinto);
+
+        int[] melhorCorte = Arrays.copyOf(pai, pai.length);
+        if(corte < corteMae) {
+            corte = corteMae;
+            melhorCorte = Arrays.copyOf(mae, mae.length);
+        }
+
         int tamanho = pai.length;
     
         // máscara binária
@@ -266,23 +285,107 @@ public class LabirintoAG {
     
         // Aplica a máscara para gerar o primeiro filho
         int[] filho1 = new int[tamanho];
-        for (int i = 0; i < tamanho; i++) {
+        for (int i = 0; i < tamanho - 2; i++) {
             // Se for 1 na máscara, herda do pai, senão, herda da mãe
-            filho1[i] = (mascaraBinaria[i] == 1) ? pai[i] : mae[i];
+            if (i < corte){
+                filho1[i] = melhorCorte[i];
+            } else {
+                filho1[i] = (mascaraBinaria[i] == 1) ? pai[i] : mae[i];
+            }            
         }
 
         // Aplica a máscara invertida para gerar o segundo filho
         int[] filho2 = new int[tamanho];
-        for (int i = 0; i < tamanho; i++) {
-            // Se for 0 na máscara, herda do pai, senão, herda da mãe
-            filho2[i] = (mascaraBinaria[i] == 0) ? pai[i] : mae[i];
+        for (int i = 0; i < tamanho - 2; i++) {
+            if (i < corte){
+                filho2[i] = melhorCorte[i];
+            } else {
+                // Se for 0 na máscara, herda do pai, senão, herda da mãe
+                filho2[i] = (mascaraBinaria[i] == 0) ? pai[i] : mae[i];
+            }            
         }
 
         // retornar vetor com os dois filhos
         return new int[][] { filho1, filho2 };
     }
 
+    static class Posicao {
+        public int linha;
+        public int coluna;
 
+        public Posicao( int linha, int coluna) {
+            this.linha = linha;
+            this.coluna = coluna;
+        }
+    }
+
+    private static int buscaPontoDeCorte(int[] populacaoAtual, char[][] labirinto) {
+        int corte = 0;
+        int posicaoAtualX = -1;
+        int posicaoAtualY = -1;
+        ArrayList<Posicao> caminhoPercorrido = new ArrayList<>();
+        caminhoPercorrido.add(new Posicao(0 , 0));
+
+        // Encontra a posição inicial (entrada)
+        for (int i = 0; i < labirinto.length; i++) {
+            for (int j = 0; j < labirinto[i].length; j++) {
+                if (labirinto[i][j] == '2') {
+                    posicaoAtualX = i;
+                    posicaoAtualY = j;
+                    break;
+                }
+            }
+            if (posicaoAtualX != -1) {
+                break;
+            }
+        }
+
+        // Percorre o caminho e atualiza a pontuação
+        for(int i = 0; i < populacaoAtual.length; i++) {        
+  
+            switch (populacaoAtual[i]) {
+                case 0: // Cima
+                    posicaoAtualX--;
+                    break;
+                case 1: // Baixo
+                    posicaoAtualX++;
+                    break;
+                case 2: // Esquerda
+                    posicaoAtualY--;
+                    break;
+                case 3: // Direita
+                    posicaoAtualY++;
+                    break;
+            }
+
+            // Verifica as condições e atribui pontuações e penalidades
+            if (posicaoAtualX < 0 || posicaoAtualX >= labirinto.length || posicaoAtualY < 0 || posicaoAtualY >= labirinto[0].length) {
+                // SAIU
+                return corte;
+            } else if (labirinto[posicaoAtualX][posicaoAtualY] == '1') {
+                // COLIDIU
+                return corte;
+            } else if (labirinto[posicaoAtualX][posicaoAtualY] == '3') {
+                // ACHOU
+                achou = true;
+                return corte = i;
+            } else {
+                for (Posicao p : caminhoPercorrido) {
+                    if(p.linha == posicaoAtualX && p.coluna == posicaoAtualY) {
+                        //contRep++;
+                        if (corte - 2 < 0) {
+                            return 0;
+                        }
+                        return corte - 2;
+                    }
+                }
+                caminhoPercorrido.add(new Posicao(posicaoAtualX , posicaoAtualY));
+
+                corte = i + 1;
+            }
+        }
+        return corte;
+    }
 
     private static int torneio(int[][] populacaoAtual, char[][] labirinto) {
         Random random = new Random();
@@ -290,10 +393,11 @@ public class LabirintoAG {
         // Seleciona dois indivíduos aleatórios
         int indice1 = random.nextInt(populacaoAtual.length);
         int indice2 = random.nextInt(populacaoAtual.length);
-    
-        // Avalia os dois indivíduos no torneio
+     
+
         int pontuacao1 = funcHeuristica(populacaoAtual[indice1], labirinto);
-        int pontuacao2 = funcHeuristica(populacaoAtual[indice2], labirinto);
+        int pontuacao2 = funcHeuristica(populacaoAtual[indice1], labirinto);
+
     
         // Retorna o índice do indivíduo com maior pontuação
         return (pontuacao1 > pontuacao2) ? indice1 : indice2;
@@ -309,13 +413,10 @@ public class LabirintoAG {
             if (pontuacao > melhorPontuacao) {
                 melhorPontuacao = pontuacao;
                 melhorIndividuo = i;
-            }
-        
+            }       
             
         }
-        System.out.println("Melhor indivíduo por elitismo: " + melhorIndividuo);
-        // coloca na primeira linha da população intermediária
-        System.arraycopy(populacaoAtual[melhorIndividuo], 0, populacaoIntermediaria[0], 0, populacaoAtual[melhorIndividuo].length);
+
     }
    
     private static void avaliaPopulação(int[][] populacaoAtual, char[][] labirinto) {
@@ -330,54 +431,62 @@ public class LabirintoAG {
         int pontuacao = 0;
         int posicaoAtualX = -1;
         int posicaoAtualY = -1;
+        ArrayList<Posicao> caminhoPercorrido = new ArrayList<>();
+        caminhoPercorrido.add(new Posicao(0 , 0));
 
-    // Encontra a posição inicial (entrada)
-    for (int i = 0; i < labirinto.length; i++) {
-        for (int j = 0; j < labirinto[i].length; j++) {
-            if (labirinto[i][j] == '2') {
-                posicaoAtualX = i;
-                posicaoAtualY = j;
-                break;
-            }
-        }
-        if (posicaoAtualX != -1) {
-            break;
-        }
-    }
-
-    // Percorre o caminho e atualiza a pontuação
-    for (int movimento : populacaoAtual) {
-        switch (movimento) {
-            case 0: // Cima
-                posicaoAtualX--;
-                break;
-            case 1: // Baixo
-                posicaoAtualX++;
-                break;
-            case 2: // Esquerda
-                posicaoAtualY--;
-                break;
-            case 3: // Direita
-                posicaoAtualY++;
-                break;
-        }
-
-        // Verifica as condições e atribui pontuações e penalidades
-        if (posicaoAtualX < 0 || posicaoAtualX >= labirinto.length || posicaoAtualY < 0 || posicaoAtualY >= labirinto[0].length) {
-            pontuacao += PEN_SAIU;
-        } else if (labirinto[posicaoAtualX][posicaoAtualY] == '1') {
-            pontuacao += PEN_COLIDIU;
-        } else if (labirinto[posicaoAtualX][posicaoAtualY] == 'S') {
-            pontuacao += PON_ACHOU;
-        } else {
-            // Verifica se a posição já foi visitada
-            for (int i = 0; i < populacaoAtual.length; i += 2) {
-                if (i != populacaoAtual.length - 2 && posicaoAtualX == populacaoAtual[i] && posicaoAtualY == populacaoAtual[i + 1]) {
-                    pontuacao += PEN_REPETIU;
+        // Encontra a posição inicial (entrada)
+        for (int i = 0; i < labirinto.length; i++) {
+            for (int j = 0; j < labirinto[i].length; j++) {
+                if (labirinto[i][j] == '2') {
+                    posicaoAtualX = i;
+                    posicaoAtualY = j;
+                    break;
                 }
             }
-            pontuacao += PON_ACERTOU;
+            if (posicaoAtualX != -1) {
+                break;
+            }
         }
+
+        // Percorre o caminho e atualiza a pontuação
+        for (int movimento : populacaoAtual) {
+            switch (movimento) {
+                case 0: // Cima
+                    posicaoAtualX--;
+                    break;
+                case 1: // Baixo
+                    posicaoAtualX++;
+                    break;
+                case 2: // Esquerda
+                    posicaoAtualY--;
+                    break;
+                case 3: // Direita
+                    posicaoAtualY++;
+                    break;
+            }
+
+            // Verifica as condições e atribui pontuações e penalidades
+            if (posicaoAtualX < 0 || posicaoAtualX >= labirinto.length || posicaoAtualY < 0 || posicaoAtualY >= labirinto[0].length) {
+                pontuacao += PEN_SAIU;
+                return pontuacao;
+            } else if (labirinto[posicaoAtualX][posicaoAtualY] == '1') {
+                pontuacao += PEN_COLIDIU;
+                return pontuacao;
+            } else if (labirinto[posicaoAtualX][posicaoAtualY] == '3') {
+                pontuacao = PON_ACHOU;
+                achou = true;
+                return pontuacao;
+            } else {
+                // Verifica se a posição já foi visitada
+                for (Posicao p : caminhoPercorrido) {
+                    if(p.linha == posicaoAtualX && p.coluna == posicaoAtualY) {
+                        pontuacao += PEN_REPETIU;
+                    }
+                }
+                caminhoPercorrido.add(new Posicao(posicaoAtualX , posicaoAtualY));
+                pontuacao += PON_ACERTOU;
+                pontuacao += PEN_CAMINHOU;
+            }
     }
 
     return pontuacao;
@@ -435,30 +544,6 @@ public class LabirintoAG {
         }
 
         return labirinto;
-    }
-
+    } 
 
 }
-
-/*
- * 1. Ler o arquivo de entrada e armazenar em uma matriz
- * 2. Gerar uma população inicial que será um conjunto de movimentos possíveis. O tamanho devve vetor deverá ser conforme o número de casas livres no labirinto, ou seja, "0".
- * - O vetor deverá ser preenchido com números aleatórios entre 0 e 3, sendo 0 para cima, 1 para baixo, 2 para esquerda e 3 para direita.
- * - gerar randomicamente um número entre 0 e 3 para cada posição do vetor.
- * - Codificar o caminho que os movimentos geram no labirinto.
- * 3. Criar a função heurística que irá avaliar a população gerada.
- * - A função heurística deverá receber o labirinto e o vetor de movimentos e retornar um valor inteiro que será a avaliação da população.
- * - A função heurística deve ajudar o algoritmo a identificar que o caminho é bom ou ruim.
- * 
- * - O código deve seguir o seguinte fluxo do algoritmo genético:
- * 1. Gerar uma população inicial
- * 2. Avaliar a população
- * Enquanto critério de parada não for atingido:
- *  3. Selecionar os indivíduos mais aptos
- *  4. Cruzar os indivíduos selecionados
- *  5. Mutar os indivíduos cruzados
- *  6. Avaliar a nova população
- *  7. Substituir a população antiga pela nova
- *  8. Voltar para o passo 3
- * 
- */
