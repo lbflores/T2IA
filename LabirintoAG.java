@@ -56,81 +56,110 @@ public class LabirintoAG {
             System.out.println();
         }
         inicializaPopulacao(populacaoAtual);
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter("log.txt"))) {
+            StringBuilder sb;
        
-        while (!solucaoEncontrada(populacaoAtual, labirinto) && iteracao < maxIteracoes) {
+                while (!solucaoEncontrada(populacaoAtual, labirinto) && iteracao < maxIteracoes) {
 
-            if(iteracao == 500) {
-                System.out.println("500");
-                System.out.println();
-            }
+                    if(iteracao == 500) {
+                        System.out.println("500");
+                        System.out.println();
+                    }
+                    
+                    //Função heurística
+                    //imprime população atual
+                    System.out.println("População atual:");
+                    for (int i = 0; i < populacaoAtual.length; i++) {
+                        for (int j = 0; j < populacaoAtual[i].length; j++) {
+                            System.out.print(populacaoAtual[i][j] + " ");
+                        }
+                        System.out.println();
+                    }
+                    avaliaPopulação(populacaoAtual, labirinto);
+
+                    // Algoritmo Genético
+                    // Faz seleção por elitismo
+                    elitismo(populacaoAtual, populacaoIntermediaria, labirinto);
+
+                    // Faz seleção por torneio para selecionar pai e mãe
+                    for (int i = 1; i < populacaoIntermediaria.length; i+=2) { // a partir de 1 para manter a linha do elitismo
+                        int indicePai = torneio(populacaoAtual, labirinto);
+                        int indiceMae = torneio(populacaoAtual, labirinto);
+                        
+                        int[][] filhos = crossover(populacaoAtual[indicePai], populacaoAtual[indiceMae], labirinto);
             
-            //Função heurística
-            //imprime população atual
-            System.out.println("População atual:");
-            for (int i = 0; i < populacaoAtual.length; i++) {
-                for (int j = 0; j < populacaoAtual[i].length; j++) {
-                    System.out.print(populacaoAtual[i][j] + " ");
+                        populacaoIntermediaria[i] = filhos[0]; // Primeiro filho
+                        populacaoIntermediaria[i + 1] = filhos[1]; // Segundo filho
+                        //fazer crossover usando mascara binária    
+
+                        // Avalia o filho 1
+                        int pontuacaoFilho1 = funcHeuristica(populacaoIntermediaria[i], labirinto);
+                        //System.out.println("Pontuação do filho 1: " + pontuacaoFilho1);
+                        // Avalia o filho 2
+                        int pontuacaoFilho2 = funcHeuristica(populacaoIntermediaria[i + 1], labirinto);
+                    // System.out.println("Pontuação do filho 2: " + pontuacaoFilho2);
+                        
+                        //Aplica mutação
+                        populacaoIntermediaria[i] = mutacao(populacaoIntermediaria[i], labirinto);
+                        populacaoIntermediaria[i + 1] = mutacao(populacaoIntermediaria[i + 1], labirinto);
+                    }
+
+                    // Atualiza a população atual com a população intermediária
+                    for (int i = 0; i < populacaoAtual.length; i++) {
+                        populacaoAtual[i] = Arrays.copyOf(populacaoIntermediaria[i], populacaoIntermediaria[i].length);
+                    }
+                    iteracao++;
+
+                    // Escreve LOG completo
+                    sb = new StringBuilder();
+                    bw.write("----------------------------------------------------------------------------------");
+                    bw.newLine();
+                    bw.write("GERAÇÃO -> " + iteracao + "\n");
+                    for (int i = 0; i < populacaoAtual.length; i++) {
+                        for (int p : populacaoAtual[i]) {
+                            sb.append(p).append(" ");
+                        }
+                        bw.write(sb.toString());
+                        bw.newLine();
+                        sb = new StringBuilder();
+                    }
+                    bw.write("PONTUAÇÕES ");
+                    bw.newLine();
+                    for (int i = 0; i < populacaoAtual.length; i++) {
+                        int pontuacao = funcHeuristica(populacaoAtual[i], labirinto);
+                        bw.write("Pontuação do indivíduo " + i + ": " + pontuacao);
+                        bw.newLine();
+                    }
                 }
-                System.out.println();
-            }
-            avaliaPopulação(populacaoAtual, labirinto);
 
-            // Algoritmo Genético
-            // Faz seleção por elitismo
-            elitismo(populacaoAtual, populacaoIntermediaria, labirinto);
+                // Imprimir o caminho atualizado ou mensagem de falha
+                if (solucaoEncontrada(populacaoAtual, labirinto)) {
+                    System.out.println("Solução encontrada na iteração " + iteracao + ":");
+                    System.out.println();
+                } else {
+                    System.out.println("Nenhuma solução encontrada após " + maxIteracoes + " iterações.");
 
-            // Faz seleção por torneio para selecionar pai e mãe
-            for (int i = 1; i < populacaoIntermediaria.length; i+=2) { // a partir de 1 para manter a linha do elitismo
-                int indicePai = torneio(populacaoAtual, labirinto);
-                int indiceMae = torneio(populacaoAtual, labirinto);
+                    System.out.println("Caminhos realizados:");
+
+                    System.out.println();
+
+                    int count = 0;
+                    for(int[] individuo: populacaoAtual){
+                        System.out.println("Indivíduo " + count);
+                        imprimirCaminhoEncontrado(individuo, labirinto);
+                        count++;
+                        System.out.println();
+                    }
+                    
+
+                    System.out.println();
+                }   
+
                 
-                int[][] filhos = crossover(populacaoAtual[indicePai], populacaoAtual[indiceMae], labirinto);
-    
-                populacaoIntermediaria[i] = filhos[0]; // Primeiro filho
-                populacaoIntermediaria[i + 1] = filhos[1]; // Segundo filho
-                //fazer crossover usando mascara binária    
-
-                // Avalia o filho 1
-                int pontuacaoFilho1 = funcHeuristica(populacaoIntermediaria[i], labirinto);
-                //System.out.println("Pontuação do filho 1: " + pontuacaoFilho1);
-                // Avalia o filho 2
-                int pontuacaoFilho2 = funcHeuristica(populacaoIntermediaria[i + 1], labirinto);
-               // System.out.println("Pontuação do filho 2: " + pontuacaoFilho2);
-                
-                //Aplica mutação
-                populacaoIntermediaria[i] = mutacao(populacaoIntermediaria[i], labirinto);
-                populacaoIntermediaria[i + 1] = mutacao(populacaoIntermediaria[i + 1], labirinto);
-            }
-
-            // Atualiza a população atual com a população intermediária
-            for (int i = 0; i < populacaoAtual.length; i++) {
-                populacaoAtual[i] = Arrays.copyOf(populacaoIntermediaria[i], populacaoIntermediaria[i].length);
-            }
-            iteracao++;
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        // Imprimir o caminho atualizado ou mensagem de falha
-        if (solucaoEncontrada(populacaoAtual, labirinto)) {
-            System.out.println("Solução encontrada na iteração " + iteracao + ":");
-            System.out.println();
-        } else {
-            System.out.println("Nenhuma solução encontrada após " + maxIteracoes + " iterações.");
-
-            System.out.println("Caminhos realizados:");
-
-            System.out.println();
-
-            int count = 0;
-            for(int[] individuo: populacaoAtual){
-                System.out.println("Indivíduo " + count);
-                imprimirCaminhoEncontrado(individuo, labirinto);
-                count++;
-                System.out.println();
-            }
-            
-
-            System.out.println();
-        }   
 
     }
 
